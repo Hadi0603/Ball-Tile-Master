@@ -65,7 +65,7 @@ public class UIManager : MonoBehaviour
         Destroy(timerText);
         winPanel.LeanMoveLocalY(0, 0.5f).setEaseOutExpo().delay = 0.1f;
         winCeleb.SetActive(true);
-        if (GameManager.levelToLoad < 20)
+        if (GameManager.levelToLoad < 1)
         {
             PlayerPrefs.SetInt("levelToLoad", ++GameManager.levelToLoad);
         }
