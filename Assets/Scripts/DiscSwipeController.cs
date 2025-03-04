@@ -126,14 +126,15 @@ public class DiscSwipeController : MonoBehaviour
         }
     }
 
-    private System.Collections.IEnumerator MoveBird(GameObject bird, Vector3 direction)
+    private IEnumerator MoveBird(GameObject bird, Vector3 direction)
 {
     Vector3 startScale = bird.transform.localScale;
     Vector3 enlargedScale = startScale * 1.2f;
+
     if (direction != Vector3.zero)
     {
         Quaternion lookRotation = Quaternion.LookRotation(direction);
-        bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, -90);
+        //bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, 0);
     }
 
     while (true)
@@ -156,7 +157,6 @@ public class DiscSwipeController : MonoBehaviour
             else if (collider.CompareTag("Block") && collider.transform.childCount > 0)
             {
                 Debug.Log("Obstacle detected: Stopping movement.");
-                //CheckAndDestroyMatchingMonsters(monster.transform.position);
             }
             else if (collider.CompareTag("Hole"))
             {
@@ -171,26 +171,24 @@ public class DiscSwipeController : MonoBehaviour
         {
             string birdName = bird.name;
             string holeName = targetHole.name;
+            
+            Debug.Log($"Bird {bird.name} moving to hole: {targetHole.name}");
 
-            if (!birdName.Equals(holeName.Replace("Hole", "Bird")))
+            yield return MoveToPosition(bird, targetHole.transform.position + new Vector3(0, 0.2f, 0));
+
+            Destroy(bird);
+            //iManager.gameTime += 1;
+            remainingBirds--;
+
+            if (remainingBirds == 0)
             {
-                float moveDuration = 0.3f;
-                float elapsedTime = 0f;
+                uiManager.TriggerGameWon();
+            }
+            yield break;
 
-                Vector3 initialPosition = bird.transform.position;
-                Vector3 holePosition = targetHole.transform.position + new Vector3(0, 0.5f, 0);
-
-                while (elapsedTime < moveDuration)
-                {
-                    float t = elapsedTime / moveDuration;
-                    t = t * t * (3f - 2f * t); // Smoothstep easing
-                    bird.transform.position = Vector3.Lerp(initialPosition, holePosition, t);
-
-                    elapsedTime += Time.deltaTime;
-                    yield return null;
-                }
-
-                bird.transform.position = holePosition;
+            /*if (!birdName.Equals(holeName.Replace("Hole", "Bird")))
+            {
+                yield return MoveToPosition(bird, targetHole.transform.position + new Vector3(0, 0.2f, 0));
                 uiManager.GameOver();
                 Debug.Log($"Bird {bird.name} stopped behind hole: {targetHole.name}");
                 yield break;
@@ -199,50 +197,31 @@ public class DiscSwipeController : MonoBehaviour
             {
                 Debug.Log($"Bird {bird.name} moving to hole: {targetHole.name}");
 
-                float moveDuration = 0.3f;
-                float elapsedTime = 0f;
+                yield return MoveToPosition(bird, targetHole.transform.position + new Vector3(0, 0.2f, 0));
 
-                Vector3 initialPosition = bird.transform.position;
-                Vector3 holePosition = targetHole.transform.position + new Vector3(0, 0.1f, 0);
-
-                while (elapsedTime < moveDuration)
-                {
-                    float t = elapsedTime / moveDuration;
-                    t = t * t * (3f - 2f * t); // Smoothstep easing
-                    bird.transform.position = Vector3.Lerp(initialPosition, holePosition, t);
-
-                    elapsedTime += Time.deltaTime;
-                    yield return null;
-                }
-
-                bird.transform.position = holePosition;
-                Debug.Log($"Bird {bird.name} destroyed in hole: {targetHole.name}");
                 Destroy(bird);
                 uiManager.gameTime += 1;
-                //CreatePuff(targetHole);
                 remainingBirds--;
-                Debug.Log(remainingBirds);
+
                 if (remainingBirds == 0)
                 {
                     uiManager.TriggerGameWon();
                 }
-                
-
                 yield break;
-            }
+            }*/
         }
 
         if (!canMove)
         {
             Debug.Log("No valid block to move to. Stopping.");
             moveStarted = false;
-            yield break;
+            break;
         }
+
         if (moveStarted)
         {
-            //movesLeft--;
             uiManager.UpdateMovesLeft(movesLeft);
-            moveStarted = false; // Reset the flag *after* the successful move start
+            moveStarted = false;
             if (movesLeft < 0)
             {
                 powerUps.DestroyHouses();
@@ -250,50 +229,48 @@ public class DiscSwipeController : MonoBehaviour
                 yield break;
             }
         }
+
         Quaternion lookRotation = Quaternion.LookRotation(direction);
-        bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, -90);
+        //bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, 0);
 
         CreateTrailEffect(bird);
-        float moveTime = 0.2f;
-        float elapsedBlockTime = 0f;
 
-        Vector3 startPosition = bird.transform.position;
-
-        // Scale up for a juicy effect
-        bird.transform.localScale = enlargedScale;
-
-        while (elapsedBlockTime < moveTime)
-        {
-            float t = elapsedBlockTime / moveTime;
-            t = t * t * (3f - 2f * t); // Smoothstep easing
-            bird.transform.position = Vector3.Lerp(startPosition, nextPosition, t);
-
-            elapsedBlockTime += Time.deltaTime;
-            yield return null;
-        }
-
-        /*movesLeft--;
-        uiManager.UpdateMovesLeft(movesLeft);
-        if (movesLeft <= 0 && remainingMonsters > 0)
-        {
-            uiManager.GameOver();
-        }*/
-
-        bird.transform.position = nextPosition;
-        bird.transform.localScale = startScale;
-        jumpSound.Play();
-        
+        yield return MoveToPosition(bird, nextPosition);
 
         if (targetBlock != null)
         {
             bird.transform.SetParent(targetBlock.transform);
-            Vector3 customPosition = targetBlock.transform.position + new Vector3(0, 0.53f, 0);
+            Vector3 customPosition = targetBlock.transform.position + new Vector3(0, 0.57687f, 0);
             bird.transform.position = customPosition;
-
-            Debug.Log($"Bird {bird.name} positioned at custom position: {bird.transform.position}");
         }
     }
 }
+
+// Smooth movement function
+private IEnumerator MoveToPosition(GameObject bird, Vector3 targetPosition)
+{
+    float moveTime = 0.2f;
+    float elapsedBlockTime = 0f;
+    Vector3 startPosition = bird.transform.position;
+    Vector3 startScale = bird.transform.localScale;
+    Vector3 enlargedScale = startScale * 1.2f;
+
+    bird.transform.localScale = enlargedScale;
+
+    while (elapsedBlockTime < moveTime)
+    {
+        float t = elapsedBlockTime / moveTime;
+        t = t * t * (3f - 2f * t); // Smoothstep easing
+        bird.transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+        elapsedBlockTime += Time.deltaTime;
+        yield return null;
+    }
+
+    bird.transform.position = targetPosition;
+    bird.transform.localScale = startScale;
+    jumpSound.Play();
+}
+
 
 
     private void CreateTrailEffect(GameObject bird)
@@ -310,22 +287,6 @@ public class DiscSwipeController : MonoBehaviour
             trail.endColor = new Color(1, 1, 1, 0);
         }
     }
-
-    /*public void CreatePuff(GameObject holeObject)
-    {
-        Vector3 screenPosition = mainCamera.WorldToScreenPoint(holeObject.transform.position);
-        GameObject puffObject = Instantiate(puff, gameCanvas.transform);
-        popSound.Play();
-        RectTransform rectTransform = puffObject.GetComponent<RectTransform>();
-        if (rectTransform != null)
-        {
-            // Convert screen position to Canvas space
-            rectTransform.anchoredPosition = ScreenToCanvasPosition(screenPosition, gameCanvas);
-            rectTransform.localScale = Vector3.one; // Ensure correct scale
-        }
-
-        Destroy(puffObject, 1f);
-    }*/
     private Vector2 ScreenToCanvasPosition(Vector3 screenPosition, Canvas canvas)
     {
         Vector2 canvasPosition;
@@ -341,58 +302,9 @@ public class DiscSwipeController : MonoBehaviour
 
         return canvasPosition;
     }
-    /*private void CheckAndDestroyMatchingMonsters(Vector3 position)
-    {
-        HashSet<GameObject> uniqueMatchingMonsters = new HashSet<GameObject>();
-
-        // Check in horizontal direction first (you can choose to check vertical first if preferred)
-        AddMatchingMonsters(Vector3.right, position, uniqueMatchingMonsters); // Check right
-        AddMatchingMonsters(Vector3.left, position, uniqueMatchingMonsters);  // Check left
-
-        // If no matching discs found horizontally, check vertically
-        if (uniqueMatchingMonsters.Count == 0)
-        {
-            AddMatchingMonsters(Vector3.forward, position, uniqueMatchingMonsters);  // Check forward
-            AddMatchingMonsters(Vector3.back, position, uniqueMatchingMonsters);     // Check back
-        }
-
-        // If there are 3 or more matching discs (including the original), destroy them
-        if (uniqueMatchingMonsters.Count >= 3)
-        {
-            uniqueMatchingMonsters.Add(GetMonsterAtPosition(position)); // Include the original disc
-
-            foreach (GameObject monster in uniqueMatchingMonsters)
-            {
-                Destroy(monster);
-                CreatePuff(monster); // Optional puff effect
-                remainingMonsters--; // Correct decrement
-            }
-
-            Debug.Log($"Destroyed {uniqueMatchingMonsters.Count} monsters. Remaining: {remainingMonsters}");
-
-            // Check if all discs are removed
-            if (remainingMonsters == 0)
-            {
-                uiManager.TriggerGameWon();
-            }
-        }
-    }*/
 
 
-    private void AddMatchingBirds(Vector3 direction, Vector3 startPosition, HashSet<GameObject> matches)
-    {
-        Vector3 nextPosition = startPosition + direction;
-        GameObject nextBird = GetBirdAtPosition(nextPosition);
-
-        while (nextBird != null && nextBird.name == GetBirdAtPosition(startPosition).name)
-        {
-            matches.Add(nextBird);
-            nextPosition += direction;
-            nextBird = GetBirdAtPosition(nextPosition);
-        }
-    }
-
-// Helper function to get the disc at a specific position
+    
     private GameObject GetBirdAtPosition(Vector3 position)
     {
         Collider[] colliders = Physics.OverlapSphere(position, 0.5f);
