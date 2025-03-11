@@ -21,6 +21,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] AudioSource gameOverSound;
 
     [SerializeField] public float gameTime = 60f;
+    
+    [SerializeField] GameObject tutorialText;
+    [SerializeField] private GameObject tutorialText1;
     private bool isBlinking = false;
     private bool isPaused = false;
     
@@ -59,13 +62,18 @@ public class UIManager : MonoBehaviour
         Debug.Log("Game Won! All discs are destroyed.");
         winSound.Play();
         levelWonUI.gameObject.SetActive(true);
+        if (tutorialText != null && tutorialText1 != null)
+        {
+            tutorialText.SetActive(false);
+            tutorialText1.SetActive(false);
+        }
         levelWonUI.LeanAlpha(1, 0.5f);
         pauseBtn.SetActive(false);
         StopCoroutine(TimerCountdown());
         Destroy(timerText);
         winPanel.LeanMoveLocalY(0, 0.5f).setEaseOutExpo().delay = 0.1f;
         winCeleb.SetActive(true);
-        if (GameManager.levelToLoad < 1)
+        if (GameManager.levelToLoad < 11)
         {
             PlayerPrefs.SetInt("levelToLoad", ++GameManager.levelToLoad);
         }
@@ -144,6 +152,11 @@ public class UIManager : MonoBehaviour
         Debug.Log("Time's up! Game Over.");
         gameOverSound.Play();
         pauseBtn.SetActive(false);
+        if (tutorialText != null && tutorialText1 != null)
+        {
+            tutorialText.SetActive(false);
+            tutorialText1.SetActive(false);
+        }
         levelLostUI.gameObject.SetActive(true);
         timerText.enabled = false;
         levelLostUI.LeanAlpha(1, 0.5f);
