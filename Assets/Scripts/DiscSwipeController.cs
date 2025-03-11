@@ -17,6 +17,7 @@ public class DiscSwipeController : MonoBehaviour
     [SerializeField] AudioSource popSound;
     [SerializeField] private int movesLeft;
     
+    private bool isBirdMoving = false;
     private bool moveStarted = false;
     private int totalBirds; 
     private int remainingBirds;
@@ -44,6 +45,7 @@ public class DiscSwipeController : MonoBehaviour
 
     private void DetectSwipe()
     {
+        if (isBirdMoving) return;
         if (Input.GetMouseButtonDown(0))
         {
             swipeStart = Input.mousePosition;
@@ -56,7 +58,7 @@ public class DiscSwipeController : MonoBehaviour
                 if (hit.collider.CompareTag("Bird"))
                 {
                     selectedBird = hit.collider.gameObject;
-                    Debug.Log($"Bird selected at start: {selectedBird.name}");
+
                 }
                 else
                 {
@@ -127,124 +129,107 @@ public class DiscSwipeController : MonoBehaviour
     }
 
     private IEnumerator MoveBird(GameObject bird, Vector3 direction)
-{
-    Vector3 startScale = bird.transform.localScale;
-    Vector3 enlargedScale = startScale * 1.2f;
-
-    if (direction != Vector3.zero)
     {
-        Quaternion lookRotation = Quaternion.LookRotation(direction);
-        //bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, 0);
-    }
+        isBirdMoving = true;
+        Vector3 startScale = bird.transform.localScale;
+        Vector3 enlargedScale = startScale * 1.2f;
 
-    while (true)
-    {
-        Vector3 nextPosition = bird.transform.position + direction;
-        Collider[] colliders = Physics.OverlapSphere(nextPosition, 0.5f);
-        bool canMove = false;
-        bool isHole = false;
-        GameObject targetBlock = null;
-        GameObject targetHole = null;
-
-        foreach (var collider in colliders)
+        if (direction != Vector3.zero)
         {
-            if (collider.CompareTag("Block") && collider.transform.childCount == 0)
-            {
-                canMove = true;
-                targetBlock = collider.gameObject;
-                break;
-            }
-            else if (collider.CompareTag("Block") && collider.transform.childCount > 0)
-            {
-                Debug.Log("Obstacle detected: Stopping movement.");
-            }
-            else if (collider.CompareTag("Hole"))
-            {
-                isHole = true;
-                targetHole = collider.gameObject;
-                break;
-            }
+            Quaternion lookRotation = Quaternion.LookRotation(direction);
+            //bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, 0);
         }
 
-        // Handle hole interaction
-        if (isHole)
+        while (true)
         {
-            string birdName = bird.name;
-            string holeName = targetHole.name;
-            
-            Debug.Log($"Bird {bird.name} moving to hole: {targetHole.name}");
+            Vector3 nextPosition = bird.transform.position + direction;
+            Collider[] colliders = Physics.OverlapSphere(nextPosition, 0.5f);
+            bool canMove = false;
+            bool isHole = false;
+            GameObject targetBlock = null;
+            GameObject targetHole = null;
 
-            yield return MoveToPosition(bird, targetHole.transform.position + new Vector3(0, 0.2f, 0));
-
-            Destroy(bird);
-            //iManager.gameTime += 1;
-            remainingBirds--;
-
-            if (remainingBirds == 0)
+            foreach (var collider in colliders)
             {
-                uiManager.TriggerGameWon();
+                if (collider.CompareTag("Block") && collider.transform.childCount == 0)
+                {
+                    canMove = true;
+                    targetBlock = collider.gameObject;
+                    break;
+                }
+                else if (collider.CompareTag("Block") && collider.transform.childCount > 0)
+                {
+                    Debug.Log("Obstacle detected: Stopping movement.");
+                }
+                else if (collider.CompareTag("Hole"))
+                {
+                    isHole = true;
+                    targetHole = collider.gameObject;
+                    break;
+                }
             }
-            yield break;
 
-            /*if (!birdName.Equals(holeName.Replace("Hole", "Bird")))
+            // Handle hole interaction
+            if (isHole)
             {
-                yield return MoveToPosition(bird, targetHole.transform.position + new Vector3(0, 0.2f, 0));
-                uiManager.GameOver();
-                Debug.Log($"Bird {bird.name} stopped behind hole: {targetHole.name}");
-                yield break;
-            }
-            else
-            {
+                string birdName = bird.name;
+                string holeName = targetHole.name;
+
                 Debug.Log($"Bird {bird.name} moving to hole: {targetHole.name}");
 
                 yield return MoveToPosition(bird, targetHole.transform.position + new Vector3(0, 0.2f, 0));
 
                 Destroy(bird);
-                uiManager.gameTime += 1;
+                //iManager.gameTime += 1;
                 remainingBirds--;
 
                 if (remainingBirds == 0)
                 {
                     uiManager.TriggerGameWon();
                 }
+                isBirdMoving = false;
                 yield break;
-            }*/
-        }
 
-        if (!canMove)
-        {
-            Debug.Log("No valid block to move to. Stopping.");
-            moveStarted = false;
-            break;
-        }
+                
+            }
 
-        if (moveStarted)
-        {
-            uiManager.UpdateMovesLeft(movesLeft);
-            moveStarted = false;
-            if (movesLeft < 0)
+            if (!canMove)
             {
-                powerUps.DestroyHouses();
-                StartCoroutine(GameOverAfterDelay());
-                yield break;
+                Debug.Log("No valid block to move to. Stopping.");
+                moveStarted = false;
+                isBirdMoving = false;
+                break;
+            }
+
+            if (moveStarted)
+            {
+                uiManager.UpdateMovesLeft(movesLeft);
+                moveStarted = false;
+                if (movesLeft < 0)
+                {
+                    powerUps.DestroyHouses();
+                    StartCoroutine(GameOverAfterDelay());
+                    isBirdMoving = false;
+                    yield break;
+                }
+            }
+
+            Quaternion lookRotation = Quaternion.LookRotation(direction);
+            //bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, 0);
+
+            CreateTrailEffect(bird);
+
+            yield return MoveToPosition(bird, nextPosition);
+
+            if (targetBlock != null)
+            {
+                bird.transform.SetParent(targetBlock.transform);
+                Vector3 customPosition = targetBlock.transform.position + new Vector3(0, 0.57687f, 0);
+                bird.transform.position = customPosition;
             }
         }
-
-        Quaternion lookRotation = Quaternion.LookRotation(direction);
-        //bird.transform.rotation = lookRotation * Quaternion.Euler(-90, 0, 0);
-
-        CreateTrailEffect(bird);
-
-        yield return MoveToPosition(bird, nextPosition);
-
-        if (targetBlock != null)
-        {
-            bird.transform.SetParent(targetBlock.transform);
-            Vector3 customPosition = targetBlock.transform.position + new Vector3(0, 0.57687f, 0);
-            bird.transform.position = customPosition;
-        }
+        isBirdMoving = false;
     }
-}
 
 // Smooth movement function
 private IEnumerator MoveToPosition(GameObject bird, Vector3 targetPosition)
@@ -286,34 +271,6 @@ private IEnumerator MoveToPosition(GameObject bird, Vector3 targetPosition)
             trail.startColor = Color.white;
             trail.endColor = new Color(1, 1, 1, 0);
         }
-    }
-    private Vector2 ScreenToCanvasPosition(Vector3 screenPosition, Canvas canvas)
-    {
-        Vector2 canvasPosition;
-        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-
-        // Convert screen position to Canvas space
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRect, 
-            screenPosition, 
-            canvas.worldCamera, 
-            out canvasPosition
-        );
-
-        return canvasPosition;
-    }
-
-
-    
-    private GameObject GetBirdAtPosition(Vector3 position)
-    {
-        Collider[] colliders = Physics.OverlapSphere(position, 0.5f);
-        foreach (var collider in colliders)
-        {
-            if (collider.CompareTag("Bird"))
-                return collider.gameObject;
-        }
-        return null;
     }
     private IEnumerator GameOverAfterDelay()
     {
