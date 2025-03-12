@@ -6,24 +6,32 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
+    [Header("Game Win")]
     [SerializeField] private GameObject winCeleb;
     [SerializeField] private CanvasGroup levelWonUI;
     [SerializeField] private GameObject winPanel;
+    
+    [Header("Game Pause")]
     [SerializeField] private CanvasGroup pauseUI;
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject pauseBtn;
-    [SerializeField] private Text timerText;
-    [SerializeField] Text movesLeftText;
+    
+    [Header("Level Lost")]
     [SerializeField] private CanvasGroup levelLostUI;
     [SerializeField] private GameObject lostPanel;
-    [SerializeField] GameObject discMover;
-    [SerializeField] AudioSource winSound;
-    [SerializeField] AudioSource gameOverSound;
-
-    [SerializeField] public float gameTime = 60f;
     
+    [Header("Gameplay")]
+    [SerializeField] private Text timerText;
+    [SerializeField] Text movesLeftText;
     [SerializeField] GameObject tutorialText;
     [SerializeField] private GameObject tutorialText1;
+    [SerializeField] public float gameTime = 60f;
+    [SerializeField] AudioSource winSound;
+    [SerializeField] AudioSource gameOverSound;
+    
+    [SerializeField] GameObject discMover;
+
+    
     private bool isBlinking = false;
     private bool isPaused = false;
     
