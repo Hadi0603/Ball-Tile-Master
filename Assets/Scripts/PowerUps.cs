@@ -15,11 +15,8 @@ public class PowerUps : MonoBehaviour
     [SerializeField] private float slowTimeFactor = 0.5f; // 50% speed
     
     private bool isSlowed = false;
-
-    [Header("Destroy Homes PowerUp")] 
-    [SerializeField] private List<GameObject> houses;
     
-    public DiscSwipeController swipeController;
+    public BallSwipeController swipeController;
 
     public void DestroyObstacles()
     {
@@ -60,25 +57,5 @@ public class PowerUps : MonoBehaviour
         Time.timeScale = 1f; // Return to normal time
         Time.fixedDeltaTime = 0.02f; // Reset physics time step
         isSlowed = false;
-    }
-
-    public void DestroyHouses()
-    {
-        if (houses == null || houses.Count == 0)
-        {
-            Debug.Log("No houses found");
-            return;
-        }
-
-        
-        for (int i = houses.Count - 1; i >= 0; i--)
-        {
-            if (houses[i] != null)
-            {
-                //swipeController.CreatePuff(houses[i]);
-                Destroy(houses[i]);
-            }
-            houses.RemoveAt(i);
-        }
     }
 }
