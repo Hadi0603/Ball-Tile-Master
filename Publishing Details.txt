@@ -1,4 +1,5 @@
-NAME : Germs Jail : Catch 3d
-PACKAGE NAME : com.gjc.germsjailcatch
-COMPANY : GJC
-PASSWORD : airi@dev01
+Ball Tile Master
+Package name : com.btm.balltilemaster
+Company: btm
+Password : Airi@dev01
+Alias/ keytsore : btm
